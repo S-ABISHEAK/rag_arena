@@ -15,6 +15,14 @@ from src.storage.document_registry import (
     DocumentRegistry
 )
 
+from src.pageindex.page_registry import (
+    PageRegistry
+)
+
+from src.pageindex.page_index_builder import (
+    PageIndexBuilder
+)
+
 from src.config.settings import (
     settings
 )
@@ -27,6 +35,12 @@ class DocumentIndexer:
         self.store = QdrantStore()
 
         self.registry = DocumentRegistry()
+
+        self.page_registry = PageRegistry()
+
+        self.page_index_builder = (
+            PageIndexBuilder()
+        )
 
     def index_directory(
         self,
@@ -53,12 +67,19 @@ class DocumentIndexer:
 
             self.registry.clear()
 
+            self.page_registry.clear()
+
         self.store.add_documents(
             chunks
         )
 
         self.registry.append_documents(
             chunks
+        )
+
+        self.page_index_builder.build(
+            page_documents=documents,
+            chunks=chunks
         )
 
         return len(chunks)
@@ -86,6 +107,11 @@ class DocumentIndexer:
             chunks
         )
 
+        self.page_index_builder.build(
+            page_documents=documents,
+            chunks=chunks
+        )
+
         return len(chunks)
 
     def get_indexed_documents_count(
@@ -103,3 +129,5 @@ class DocumentIndexer:
     ) -> None:
 
         self.registry.clear()
+
+        self.page_registry.clear()

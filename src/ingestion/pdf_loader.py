@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import List
 
 from langchain_core.documents import Document
-from langchain_community.document_loaders import PyPDFLoader
+from pypdf import PdfReader
 
 
 def load_pdf(pdf_path: str) -> List[Document]:
@@ -24,8 +24,14 @@ def load_pdf(pdf_path: str) -> List[Document]:
     if path.suffix.lower() != ".pdf":
         raise ValueError(f"Unsupported file type: {path.suffix}")
 
-    loader = PyPDFLoader(str(path))
-    documents = loader.load()
+    # Extract text using pypdf and wrap into LangChain Documents
+    reader = PdfReader(path)
+    documents: List[Document] = []
+    
+    for page_num, page in enumerate(reader.pages):
+        text = page.extract_text() or ""
+        metadata = {"source": str(path), "page": page_num}
+        documents.append(Document(page_content=text, metadata=metadata))
 
     return documents
 
@@ -53,7 +59,7 @@ def load_pdf_directory(directory_path: str) -> List[Document]:
     pdf_files = sorted(directory.glob("*.pdf"))
 
     for pdf_file in pdf_files:
-        loader = PyPDFLoader(str(pdf_file))
-        documents.extend(loader.load())
+        # Reuses the updated load_pdf function logic safely
+        documents.extend(load_pdf(str(pdf_file)))
 
     return documents
