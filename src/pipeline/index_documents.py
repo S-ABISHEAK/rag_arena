@@ -1,6 +1,5 @@
-from pathlib import Path
-
 from src.ingestion.pdf_loader import (
+    load_pdf,
     load_pdf_directory
 )
 
@@ -10,6 +9,10 @@ from src.chunking.text_splitter import (
 
 from src.vectorstores.qdrant_store import (
     QdrantStore
+)
+
+from src.storage.document_registry import (
+    DocumentRegistry
 )
 
 from src.config.settings import (
@@ -23,9 +26,12 @@ class DocumentIndexer:
 
         self.store = QdrantStore()
 
+        self.registry = DocumentRegistry()
+
     def index_directory(
         self,
-        directory_path: str | None = None
+        directory_path: str | None = None,
+        reset_registry: bool = False
     ) -> int:
 
         directory = (
@@ -43,7 +49,15 @@ class DocumentIndexer:
             chunk_overlap=settings.CHUNK_OVERLAP
         )
 
+        if reset_registry:
+
+            self.registry.clear()
+
         self.store.add_documents(
+            chunks
+        )
+
+        self.registry.append_documents(
             chunks
         )
 
@@ -54,11 +68,9 @@ class DocumentIndexer:
         pdf_path: str
     ) -> int:
 
-        from src.ingestion.pdf_loader import (
-            load_pdf
+        documents = load_pdf(
+            pdf_path
         )
-
-        documents = load_pdf(pdf_path)
 
         chunks = split_documents(
             documents,
@@ -70,4 +82,24 @@ class DocumentIndexer:
             chunks
         )
 
+        self.registry.append_documents(
+            chunks
+        )
+
         return len(chunks)
+
+    def get_indexed_documents_count(
+        self
+    ) -> int:
+
+        documents = (
+            self.registry.load_documents()
+        )
+
+        return len(documents)
+
+    def clear_registry(
+        self
+    ) -> None:
+
+        self.registry.clear()

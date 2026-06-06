@@ -1,4 +1,5 @@
 from typing import List
+import uuid
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -40,6 +41,8 @@ def split_documents(
     chunks = splitter.split_documents(documents)
 
     for idx, chunk in enumerate(chunks):
-        chunk.metadata["chunk_id"] = idx
+        chunk.metadata["chunk_id"] = (
+         str(uuid.uuid4())
+        )
 
     return chunks

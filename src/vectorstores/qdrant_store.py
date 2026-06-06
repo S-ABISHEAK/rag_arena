@@ -133,7 +133,7 @@ class QdrantStore:
             settings.QDRANT_COLLECTION
         )        
     
-    
+
     def similarity_search_by_metadata(
     self,
     query: str,
@@ -145,3 +145,14 @@ class QdrantStore:
         k=k,
         filter=metadata_filter
     )
+
+
+    def similarity_search_with_score(
+        self,
+        query: str,
+        k: int = 5
+    ):
+        return self.vectorstore.similarity_search_with_score(
+            query=query,
+            k=k
+        ) 
