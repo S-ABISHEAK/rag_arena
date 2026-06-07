@@ -5,3 +5,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.pdf
+*.log
+*.csv
+*.json

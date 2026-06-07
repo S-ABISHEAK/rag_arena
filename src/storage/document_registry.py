@@ -72,3 +72,19 @@ class DocumentRegistry:
         if self.registry_path.exists():
 
             self.registry_path.unlink()
+
+
+    def get_chunks_by_ids(
+        self,
+        chunk_ids: list[str]
+    ):
+
+        documents = self.load_documents()
+
+        return [
+            doc
+            for doc in documents
+            if doc.metadata.get(
+                "chunk_id"
+            ) in chunk_ids
+        ]         

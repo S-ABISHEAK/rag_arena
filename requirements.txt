@@ -1,6 +1,8 @@
 langchain
 langchain-community
 langchain-groq
+langchain-qdrant
+langchain_huggingface
 
 qdrant-client
 
@@ -26,3 +28,7 @@ sentence-transformers
 qdrant-client
 
 rank-bm25
+
+ragas
+
+datasets

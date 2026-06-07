@@ -1,10 +1,17 @@
 import re
 
+from langchain_core.documents import Document
+
 from src.config.settings import (
     settings
 )
+
 from src.pageindex.page_registry import (
     PageRegistry
+)
+
+from src.storage.document_registry import (
+    DocumentRegistry
 )
 
 from src.llm.groq_client import (
@@ -24,11 +31,13 @@ class PageIndexRAG:
 
     MAX_SELECTED_PAGES = settings.TOP_K
 
-    MAX_PAGE_CONTENT_CHARS = 1200
-
     def __init__(self):
 
         self.registry = PageRegistry()
+
+        self.document_registry = (
+            DocumentRegistry()
+        )
 
         self.llm = GroqLLM()
 
@@ -54,12 +63,12 @@ class PageIndexRAG:
 
             page_descriptions.append(
                 f"""
-    Page Number:
-    {page["page_number"]}
+Page Number:
+{page["page_number"]}
 
-    Summary:
-    {page["summary"]}
-    """
+Summary:
+{page["summary"]}
+"""
             )
 
         pages_text = "\n".join(
@@ -88,6 +97,7 @@ class PageIndexRAG:
         }
 
         unique_pages = []
+
         seen_pages = set()
 
         for page_number in page_numbers:
@@ -107,12 +117,12 @@ class PageIndexRAG:
             : self.MAX_SELECTED_PAGES
         ]
 
-    def build_context(
+    def get_chunks_from_pages(
         self,
         selected_pages: list[int]
-    ) -> str:
+    ) -> list[Document]:
 
-        context_parts = []
+        selected_chunk_ids = []
 
         for page in self.pages:
 
@@ -121,21 +131,25 @@ class PageIndexRAG:
                 in selected_pages
             ):
 
-                page_content = page["page_content"]
-
-                if len(page_content) > self.MAX_PAGE_CONTENT_CHARS:
-
-                    page_content = (
-                        page_content[: self.MAX_PAGE_CONTENT_CHARS]
-                        + "..."
-                    )
-
-                context_parts.append(
-                    f"Page {page['page_number']}:\n{page_content}"
+                selected_chunk_ids.extend(
+                    page["chunk_ids"]
                 )
 
+        return (
+            self.document_registry
+            .get_chunks_by_ids(
+                selected_chunk_ids
+            )
+        )
+
+    def build_context(
+        self,
+        chunks: list[Document]
+    ) -> str:
+
         return "\n\n".join(
-            context_parts
+            chunk.page_content
+            for chunk in chunks
         )
 
     def generate_answer(
@@ -164,9 +178,15 @@ class PageIndexRAG:
             )
         )
 
+        chunks = (
+            self.get_chunks_from_pages(
+                selected_pages
+            )
+        )
+
         context = (
             self.build_context(
-                selected_pages
+                chunks
             )
         )
 
@@ -183,7 +203,10 @@ class PageIndexRAG:
             "selected_pages": (
                 selected_pages
             ),
+            "retrieved_chunks": (
+                len(chunks)
+            ),
             "retrieval_type": (
-                "pageindex"
+                "pageindex_v2"
             )
         }
