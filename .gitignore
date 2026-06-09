@@ -9,3 +9,10 @@ __pycache__/
 *.log
 *.csv
 *.json
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+*.tar.gz
+*.egg-info/
+*.pkl
