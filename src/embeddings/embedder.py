@@ -5,7 +5,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 
 
 DEFAULT_EMBEDDING_MODEL = (
-    "sentence-transformers/all-MiniLM-L6-v2" #"BAAI/bge-small-en-v1.5" #"intfloat/e5-base-v2"
+    "BAAI/bge-small-en-v1.5" #"BAAI/bge-small-en-v1.5" #"intfloat/e5-base-v2"
 )
 
 

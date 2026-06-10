@@ -18,12 +18,18 @@ from src.retrieval.graph_rag import (
     GraphRAG
 )
 
+from src.cache.query_cache import (
+    QueryCache
+)
+
 
 class AgenticRAG:
 
     def __init__(self):
 
-        self.router = Router()
+        self.router = (
+            Router()
+        )
 
         self.traditional_rag = (
             TraditionalRAG()
@@ -41,10 +47,28 @@ class AgenticRAG:
             GraphRAG()
         )
 
+        self.cache = (
+            QueryCache()
+        )
+
     def query(
         self,
         question: str
     ):
+
+        cached_response = (
+            self.cache.get(
+                question
+            )
+        )
+
+        if cached_response:
+
+            cached_response[
+                "cache_hit"
+            ] = True
+
+            return cached_response
 
         route = (
             self.router.route(
@@ -84,9 +108,17 @@ class AgenticRAG:
                 )
             )
 
-        response["selected_strategy"] = (
-            route
+        response[
+            "selected_strategy"
+        ] = route
+
+        response[
+            "cache_hit"
+        ] = False
+
+        self.cache.set(
+            query=question,
+            response=response
         )
 
         return response
-    
