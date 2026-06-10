@@ -116,9 +116,16 @@ class AgenticRAG:
             "cache_hit"
         ] = False
 
+        cache_response = response.copy()
+
+        cache_response.pop(
+            "sources",
+            None
+        )
+
         self.cache.set(
             query=question,
-            response=response
+            response=cache_response
         )
 
         return response

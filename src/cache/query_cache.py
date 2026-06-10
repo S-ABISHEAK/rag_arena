@@ -61,6 +61,7 @@ class QueryCache:
             key,
             ttl,
             json.dumps(
-                response
-            )
+            response,
+            default=str
+        )
         )
