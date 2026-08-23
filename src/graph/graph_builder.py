@@ -22,12 +22,13 @@ class GraphBuilder:
             EntityExtractor()
         )
 
-        self.graph_store = (
-            GraphStore()
-        )
-
         self.registry = (
             GraphRegistry()
+        )
+
+        self.graph_store = (
+            self.registry.load_graph()
+            or GraphStore()
         )
 
     def build(
@@ -35,20 +36,23 @@ class GraphBuilder:
         documents: list[Document]
     ) -> GraphStore:
 
-        for document in documents:
-
-            extraction_result = (
-                self.extractor.extract(
+        extraction_results = (
+            self.extractor.extract_batch(
+                [
                     document.page_content
-                )
+                    for document in documents
+                ]
             )
+        )
+
+        for extraction_result in extraction_results:
 
             self.graph_store.add_extraction_result(
                 extraction_result
             )
 
-            self.registry.save_graph(
-                self.graph_store
-            )
+        self.registry.save_graph(
+            self.graph_store
+        )
 
         return self.graph_store

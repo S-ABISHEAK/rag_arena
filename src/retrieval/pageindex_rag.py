@@ -203,6 +203,7 @@ Summary:
             "selected_pages": (
                 selected_pages
             ),
+            "sources": chunks,
             "retrieved_chunks": (
                 len(chunks)
             ),

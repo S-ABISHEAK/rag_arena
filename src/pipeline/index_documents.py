@@ -23,6 +23,14 @@ from src.pageindex.page_index_builder import (
     PageIndexBuilder
 )
 
+from src.graph.graph_builder import (
+    GraphBuilder
+)
+
+from src.graph.graph_registry import (
+    GraphRegistry
+)
+
 from src.config.settings import (
     settings
 )
@@ -38,8 +46,14 @@ class DocumentIndexer:
 
         self.page_registry = PageRegistry()
 
+        self.graph_registry = GraphRegistry()
+
         self.page_index_builder = (
             PageIndexBuilder()
+        )
+
+        self.graph_builder = (
+            GraphBuilder()
         )
 
     def index_directory(
@@ -69,6 +83,8 @@ class DocumentIndexer:
 
             self.page_registry.clear()
 
+            self.graph_registry.clear()
+
         self.store.add_documents(
             chunks
         )
@@ -80,6 +96,10 @@ class DocumentIndexer:
         self.page_index_builder.build(
             page_documents=documents,
             chunks=chunks
+        )
+
+        self.graph_builder.build(
+            documents=chunks
         )
 
         return len(chunks)
@@ -112,6 +132,10 @@ class DocumentIndexer:
             chunks=chunks
         )
 
+        self.graph_builder.build(
+            documents=chunks
+        )
+
         return len(chunks)
 
     def get_indexed_documents_count(
@@ -131,3 +155,5 @@ class DocumentIndexer:
         self.registry.clear()
 
         self.page_registry.clear()
+
+        self.graph_registry.clear()

@@ -3,17 +3,14 @@ from typing import List
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 
-
-DEFAULT_EMBEDDING_MODEL = (
-    "BAAI/bge-small-en-v1.5" #"BAAI/bge-small-en-v1.5" #"intfloat/e5-base-v2"
-)
+from src.config.settings import settings
 
 
 class EmbeddingService:
 
     def __init__(
         self,
-        model_name: str = DEFAULT_EMBEDDING_MODEL
+        model_name: str = settings.EMBEDDING_MODEL
     ):
 
         self.model = HuggingFaceEmbeddings(

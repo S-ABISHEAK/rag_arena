@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  --color-bg-primary: #0a0b0f;
+  --color-bg-secondary: #12131a;
+  --color-bg-tertiary: #16181f;
+
+  --color-glass: rgba(255, 255, 255, 0.06);
+  --color-glass-hover: rgba(255, 255, 255, 0.09);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+
+  --color-text-primary: #e8e9ed;
+  --color-text-secondary: #9a9ba5;
+  --color-text-muted: #63646e;
+
+  --color-traditional: #3b82f6;
+  --color-hybrid: #a855f7;
+  --color-pageindex: #14b8a6;
+  --color-graph: #f59e0b;
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-gradient-sweep: gradient-sweep 3s linear infinite;
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-bar-grow: bar-grow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 8px 2px currentColor;
+  }
+}
+
+@keyframes gradient-sweep {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Glass surface — the base shell used by every card/panel/modal */
+.glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-glass-border);
+}
+
+.glass-hover {
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.glass-hover:hover {
+  background: var(--color-glass-hover);
+}
+
+/* Strategy accent gradient for "Auto" */
+.gradient-auto {
+  background: linear-gradient(
+    90deg,
+    var(--color-traditional),
+    var(--color-hybrid),
+    var(--color-pageindex),
+    var(--color-graph),
+    var(--color-traditional)
+  );
+  background-size: 300% 100%;
+  animation: gradient-sweep 4s linear infinite;
+}
+
+.font-mono-nums {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

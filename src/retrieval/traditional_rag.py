@@ -72,5 +72,6 @@ class TraditionalRAG:
         return {
             "question": question,
             "answer": answer,
-            "sources": retrieved_docs
+            "sources": retrieved_docs,
+            "retrieval_type": "traditional"
         }

@@ -1,18 +1,47 @@
 .env
 .env*
+!.env.example
+!frontend/.env
 venv/
+.venv/
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 .pdf
 *.log
-*.csv
-*.json
+data/**/*.csv
+data/**/*.json
 *.db
 *.sqlite
 *.sqlite3
 *.zip
 *.tar.gz
 *.egg-info/
-*.pkl
+data/**/*.pkl
+.pytest_cache/
+
+# Cached LLM outputs (see src/utils/content_cache.py) — regenerated as
+# documents are indexed, not needed to run or clone the project.
+data/llm_cache/
+
+# Stale Windows `tree` dump from before this was a git repo — not read by
+# any code, not needed to run the project.
+structure.txt
+
+# Claude Code / AI assistant local settings — machine-specific, not part
+# of the project.
+.claude/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend build output (frontend/ has its own .gitignore for node_modules etc.)
+frontend/dist/

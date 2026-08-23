@@ -108,11 +108,34 @@ class HybridRAG(TraditionalRAG):
         """
         Merge lexical and semantic
         retrieval results.
+
+        Interleaved round-robin so neither
+        source dominates before truncation
+        to k.
         """
 
-        merged_documents = (
-            bm25_documents +
+        merged_documents = []
+
+        for bm25_doc, vector_doc in zip(
+            bm25_documents,
             vector_documents
+        ):
+
+            merged_documents.append(bm25_doc)
+
+            merged_documents.append(vector_doc)
+
+        shorter_len = min(
+            len(bm25_documents),
+            len(vector_documents)
+        )
+
+        merged_documents.extend(
+            bm25_documents[shorter_len:]
+        )
+
+        merged_documents.extend(
+            vector_documents[shorter_len:]
         )
 
         return self._deduplicate_documents(

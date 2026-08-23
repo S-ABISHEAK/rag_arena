@@ -26,10 +26,6 @@ class EmbeddingRouter:
             self._build_profiles()
         )
 
-        self.profile_embeddings = (
-            self._build_profiles()
-        )
-
         self.bandit = (
             ContextualBandit()
         )
@@ -85,6 +81,11 @@ class EmbeddingRouter:
             scores[
                 retriever
             ] = similarity
+
+        return max(
+            scores,
+            key=scores.get
+        )
 
     def route_with_scores(
         self,

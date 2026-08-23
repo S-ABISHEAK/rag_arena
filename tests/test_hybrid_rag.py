@@ -19,9 +19,7 @@ chunks = split_documents(
     documents
 )
 
-rag = HybridRAG(
-    all_documents=chunks
-)
+rag = HybridRAG()
 
 response = rag.query(
     "What is this document about?"

@@ -27,7 +27,20 @@ class PageIndexBuilder:
         chunks: list[Document]
     ) -> None:
 
-        for page_doc in page_documents:
+        summaries = (
+            self.summary_builder
+            .generate_summaries_batch(
+                [
+                    page_doc.page_content
+                    for page_doc in page_documents
+                ]
+            )
+        )
+
+        for page_doc, summary in zip(
+            page_documents,
+            summaries
+        ):
 
             source = page_doc.metadata.get(
                 "source",
@@ -41,13 +54,6 @@ class PageIndexBuilder:
 
             page_content = (
                 page_doc.page_content
-            )
-
-            summary = (
-                self.summary_builder
-                .generate_summary(
-                    page_content
-                )
             )
 
             chunk_ids = []
