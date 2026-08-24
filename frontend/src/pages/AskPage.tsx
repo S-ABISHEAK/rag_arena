@@ -7,12 +7,10 @@ import { ChatHistory } from "@/components/ask/ChatHistory"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AUTO_META, STRATEGIES } from "@/lib/strategy"
 import { queryByStrategy } from "@/lib/api"
-import type { QueryResult, StrategyKey } from "@/lib/types"
+import { useAskStore } from "@/lib/askStore"
 
 export function AskPage() {
-  const [strategy, setStrategy] = useState<StrategyKey>("auto")
-  const [history, setHistory] = useState<QueryResult[]>([])
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const { strategy, history, activeIndex, setStrategy, addResult, setActiveIndex } = useAskStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,8 +22,7 @@ export function AskPage() {
     setError(null)
     try {
       const result = await queryByStrategy(strategy, question)
-      setHistory((h) => [result, ...h])
-      setActiveIndex(0)
+      addResult(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Query failed")
     } finally {

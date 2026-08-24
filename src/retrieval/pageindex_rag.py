@@ -56,13 +56,26 @@ class PageIndexRAG:
         self,
         question: str
     ) -> list[int]:
+        """
+        Returns a list of Page IDs — indices into self.pages — NOT the
+        document's own page number. Page numbers restart at 0 for every
+        indexed PDF, so once more than one document is indexed they
+        collide; the Page ID (this list's index) is the only value that
+        stays unique across every indexed document.
+        """
 
         page_descriptions = []
 
-        for page in self.pages:
+        for page_id, page in enumerate(self.pages):
 
             page_descriptions.append(
                 f"""
+Page ID:
+{page_id}
+
+Source:
+{page["source"]}
+
 Page Number:
 {page["page_number"]}
 
@@ -86,54 +99,48 @@ Summary:
             prompt
         )
 
-        page_numbers = re.findall(
+        page_ids = re.findall(
             r"\d+",
             response
         )
 
-        valid_pages = {
-            page["page_number"]
-            for page in self.pages
-        }
+        valid_page_ids = set(
+            range(len(self.pages))
+        )
 
-        unique_pages = []
+        unique_page_ids = []
 
-        seen_pages = set()
+        seen_page_ids = set()
 
-        for page_number in page_numbers:
+        for page_id in page_ids:
 
-            page = int(page_number)
+            page_id = int(page_id)
 
             if (
-                page in valid_pages
-                and page not in seen_pages
+                page_id in valid_page_ids
+                and page_id not in seen_page_ids
             ):
 
-                seen_pages.add(page)
+                seen_page_ids.add(page_id)
 
-                unique_pages.append(page)
+                unique_page_ids.append(page_id)
 
-        return unique_pages[
+        return unique_page_ids[
             : self.MAX_SELECTED_PAGES
         ]
 
     def get_chunks_from_pages(
         self,
-        selected_pages: list[int]
+        selected_page_ids: list[int]
     ) -> list[Document]:
 
         selected_chunk_ids = []
 
-        for page in self.pages:
+        for page_id in selected_page_ids:
 
-            if (
-                page["page_number"]
-                in selected_pages
-            ):
-
-                selected_chunk_ids.extend(
-                    page["chunk_ids"]
-                )
+            selected_chunk_ids.extend(
+                self.pages[page_id]["chunk_ids"]
+            )
 
         return (
             self.document_registry
@@ -172,7 +179,7 @@ Summary:
         question: str
     ) -> dict:
 
-        selected_pages = (
+        selected_page_ids = (
             self.select_pages(
                 question
             )
@@ -180,7 +187,7 @@ Summary:
 
         chunks = (
             self.get_chunks_from_pages(
-                selected_pages
+                selected_page_ids
             )
         )
 
@@ -196,6 +203,14 @@ Summary:
                 context
             )
         )
+
+        # "selected_pages" is reported as each source's own page number,
+        # for display — the Page IDs above exist only to keep retrieval
+        # correct when multiple documents are indexed.
+        selected_pages = [
+            self.pages[page_id]["page_number"]
+            for page_id in selected_page_ids
+        ]
 
         return {
             "question": question,
