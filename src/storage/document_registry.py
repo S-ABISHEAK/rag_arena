@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 import pickle
 
@@ -5,6 +6,14 @@ from langchain_core.documents import Document
 
 
 class DocumentRegistry:
+
+    # Class-level, not per-instance: separate DocumentRegistry() instances
+    # (resources.py's cached one, plus fresh ones each HybridRAG/PageIndexRAG
+    # constructs) all point at the same file, so they must all serialize
+    # through the same lock — otherwise two concurrent uploads can each
+    # load-modify-save based on a stale read and silently drop each other's
+    # chunks.
+    _lock = threading.Lock()
 
     def __init__(
         self,
@@ -57,21 +66,25 @@ class DocumentRegistry:
         documents: list[Document]
     ) -> None:
 
-        existing = self.load_documents()
+        with self._lock:
 
-        existing.extend(
-            documents
-        )
+            existing = self.load_documents()
 
-        self.save_documents(
-            existing
-        )
+            existing.extend(
+                documents
+            )
+
+            self.save_documents(
+                existing
+            )
 
     def clear(self) -> None:
 
-        if self.registry_path.exists():
+        with self._lock:
 
-            self.registry_path.unlink()
+            if self.registry_path.exists():
+
+                self.registry_path.unlink()
 
 
     def get_chunks_by_ids(
@@ -87,4 +100,4 @@ class DocumentRegistry:
             if doc.metadata.get(
                 "chunk_id"
             ) in chunk_ids
-        ]         
+        ]

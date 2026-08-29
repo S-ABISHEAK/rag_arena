@@ -37,6 +37,8 @@ class PageIndexBuilder:
             )
         )
 
+        pages_to_add = []
+
         for page_doc, summary in zip(
             page_documents,
             summaries
@@ -76,10 +78,14 @@ class PageIndexBuilder:
                         )
                     )
 
-            self.registry.add_page(
-                source=source,
-                page_number=page_number,
-                page_content=page_content,
-                summary=summary,
-                chunk_ids=chunk_ids
+            pages_to_add.append(
+                {
+                    "source": source,
+                    "page_number": page_number,
+                    "page_content": page_content,
+                    "summary": summary,
+                    "chunk_ids": chunk_ids
+                }
             )
+
+        self.registry.add_pages(pages_to_add)

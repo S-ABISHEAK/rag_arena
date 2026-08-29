@@ -3,6 +3,8 @@
 # their working data once, in __init__ — a cached instance would silently
 # serve stale results after a re-index otherwise.
 
+import threading
+
 from src.retrieval.traditional_rag import TraditionalRAG
 from src.retrieval.hybrid_rag import HybridRAG
 from src.retrieval.pageindex_rag import PageIndexRAG
@@ -19,16 +21,22 @@ from src.graph.graph_registry import GraphRegistry
 from src.cache.query_cache import QueryCache
 
 _cache: dict = {}
+_cache_lock = threading.Lock()
 
 
 def _get(key: str, factory):
     if key not in _cache:
-        _cache[key] = factory()
+        with _cache_lock:
+            # Re-check inside the lock: another thread may have finished
+            # constructing it while we were waiting.
+            if key not in _cache:
+                _cache[key] = factory()
     return _cache[key]
 
 
 def invalidate() -> None:
-    _cache.clear()
+    with _cache_lock:
+        _cache.clear()
 
 
 def get_indexer() -> DocumentIndexer:

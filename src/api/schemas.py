@@ -92,6 +92,9 @@ class ModelConfig(BaseModel):
     chunk_overlap: int
     top_k: int
     qdrant_collection: str
+    reasoning_effort: str
+    max_output_tokens: int
+    max_context_tokens: int
 
 
 class RouteResult(BaseModel):

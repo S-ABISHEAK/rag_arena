@@ -1,8 +1,15 @@
+import threading
 from pathlib import Path
 import pickle
 
 
 class GraphRegistry:
+
+    # Class-level: shared by every GraphRegistry instance so GraphBuilder
+    # can hold it across a full load-merge-save cycle (see GraphBuilder.build)
+    # without two concurrent builds racing to load the same base graph and
+    # then overwrite each other's additions on save.
+    _lock = threading.Lock()
 
     def __init__(
         self,
@@ -62,6 +69,8 @@ class GraphRegistry:
         self
     ):
 
-        if self.graph_path.exists():
+        with self._lock:
 
-            self.graph_path.unlink()
+            if self.graph_path.exists():
+
+                self.graph_path.unlink()

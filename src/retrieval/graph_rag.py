@@ -10,6 +10,14 @@ from src.prompts.rag_prompt import (
     RAG_PROMPT
 )
 
+from src.config.settings import (
+    settings
+)
+
+from src.utils.token_budget import (
+    truncate_to_token_budget
+)
+
 
 class GraphRAG:
 
@@ -26,10 +34,18 @@ class GraphRAG:
         question: str
     ) -> str:
 
-        return (
+        context = (
             self.retriever.retrieve(
                 question
             )
+        )
+
+        # A question that expands into many entities/relationships (e.g.
+        # a densely-connected 2-hop neighborhood) could otherwise produce
+        # an unbounded amount of relationship text.
+        return truncate_to_token_budget(
+            context,
+            settings.MAX_CONTEXT_TOKENS
         )
 
     def generate_answer(

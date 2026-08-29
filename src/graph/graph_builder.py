@@ -26,16 +26,14 @@ class GraphBuilder:
             GraphRegistry()
         )
 
-        self.graph_store = (
-            self.registry.load_graph()
-            or GraphStore()
-        )
-
     def build(
         self,
         documents: list[Document]
     ) -> GraphStore:
 
+        # The slow part — LLM extraction — runs outside the lock so it
+        # doesn't block other concurrent builds from reading/writing the
+        # graph file while it's in flight.
         extraction_results = (
             self.extractor.extract_batch(
                 [
@@ -45,14 +43,25 @@ class GraphBuilder:
             )
         )
 
-        for extraction_result in extraction_results:
+        # Load, merge, and save as one atomic unit: without this lock, two
+        # concurrent builds could both load the same base graph, each add
+        # their own entities in memory, and whichever saves last would
+        # silently discard the other's additions.
+        with GraphRegistry._lock:
 
-            self.graph_store.add_extraction_result(
-                extraction_result
+            graph_store = (
+                self.registry.load_graph()
+                or GraphStore()
             )
 
-        self.registry.save_graph(
-            self.graph_store
-        )
+            for extraction_result in extraction_results:
 
-        return self.graph_store
+                graph_store.add_extraction_result(
+                    extraction_result
+                )
+
+            self.registry.save_graph(
+                graph_store
+            )
+
+        return graph_store

@@ -6,6 +6,8 @@ from src.llm.groq_client import (
 )
 
 from src.utils.content_cache import ContentCache
+from src.config.settings import settings
+from src.utils.token_budget import truncate_to_token_budget
 
 
 PAGE_SUMMARY_PROMPT = """
@@ -72,10 +74,15 @@ class PageSummaryBuilder:
             return FALLBACK_SUMMARY
 
         prompt = PAGE_SUMMARY_PROMPT.format(
-            page_content=page_content
+            page_content=truncate_to_token_budget(
+                page_content, settings.MAX_BATCH_ITEM_TOKENS
+            )
         )
 
         summary = self.llm.invoke(prompt).strip()
+        # Cached under the original (untruncated) content, so the cache
+        # key reflects what the page actually is, not the truncated view
+        # the LLM happened to see.
         self.cache.set(page_content, summary)
         return summary
 
@@ -119,7 +126,8 @@ class PageSummaryBuilder:
     ) -> None:
 
         pages_block = "\n\n".join(
-            f"--- Page index {i} ---\n{pages[i]}"
+            f"--- Page index {i} ---\n"
+            f"{truncate_to_token_budget(pages[i], settings.MAX_BATCH_ITEM_TOKENS)}"
             for i in batch_indices
         )
 

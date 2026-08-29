@@ -34,13 +34,17 @@ class GroqLLM:
     def __init__(
         self,
         model_name: str = settings.DEFAULT_LLM_MODEL,
-        temperature: float = 0.0
+        temperature: float = 0.0,
+        max_tokens: int = settings.MAX_OUTPUT_TOKENS,
+        reasoning_effort: str = settings.REASONING_EFFORT
     ):
 
         self.llm = ChatGroq(
             api_key=settings.GROQ_API_KEY,
             model=model_name,
-            temperature=temperature
+            temperature=temperature,
+            max_tokens=max_tokens,
+            reasoning_effort=reasoning_effort
         )
 
     def invoke(

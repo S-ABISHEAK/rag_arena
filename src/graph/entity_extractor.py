@@ -11,6 +11,8 @@ from src.prompts.graph_extraction_prompt import (
 )
 
 from src.utils.content_cache import ContentCache
+from src.config.settings import settings
+from src.utils.token_budget import truncate_to_token_budget
 
 MIN_MEANINGFUL_CHARS = 40
 BATCH_SIZE = 5
@@ -46,7 +48,9 @@ class EntityExtractor:
 
         prompt = (
             GRAPH_EXTRACTION_PROMPT.format(
-                text=text
+                text=truncate_to_token_budget(
+                    text, settings.MAX_BATCH_ITEM_TOKENS
+                )
             )
         )
 
@@ -99,7 +103,8 @@ class EntityExtractor:
     ) -> None:
 
         chunks_block = "\n\n".join(
-            f"--- Chunk index {i} ---\n{texts[i]}"
+            f"--- Chunk index {i} ---\n"
+            f"{truncate_to_token_budget(texts[i], settings.MAX_BATCH_ITEM_TOKENS)}"
             for i in batch_indices
         )
 

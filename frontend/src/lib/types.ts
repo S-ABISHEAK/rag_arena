@@ -83,6 +83,9 @@ export interface ModelConfig {
   chunk_overlap: number
   top_k: number
   qdrant_collection: string
+  reasoning_effort: string
+  max_output_tokens: number
+  max_context_tokens: number
 }
 
 export interface IndexResult {

@@ -1,10 +1,12 @@
+import logging
 import tempfile
 import time
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from src.api import resources
 from src.api.converters import build_query_result
@@ -32,19 +34,28 @@ from src.config.settings import settings
 from src.evaluation.benchmark import compare_rags
 from src.vectorstores.qdrant_store import QdrantStore
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("rag_arena.api")
+
 app = FastAPI(title="RAG Arena API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5183",
-        "http://localhost:5173",
-        "http://127.0.0.1:5183",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    # Safety net for anything that isn't already caught and turned into an
+    # HTTPException below — logs the full traceback server-side (nothing
+    # here was being logged before, which makes production issues hard to
+    # diagnose from logs alone) while still returning the real error detail
+    # to the client, consistent with every other error response in this API.
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
 
 
 def _run_query(build_rag, question: str, fallback_type: str) -> QueryResult:
@@ -82,6 +93,9 @@ def config():
         chunk_overlap=settings.CHUNK_OVERLAP,
         top_k=settings.TOP_K,
         qdrant_collection=settings.QDRANT_COLLECTION,
+        reasoning_effort=settings.REASONING_EFFORT,
+        max_output_tokens=settings.MAX_OUTPUT_TOKENS,
+        max_context_tokens=settings.MAX_CONTEXT_TOKENS,
     )
 
 
@@ -90,12 +104,15 @@ def config():
 
 @app.get("/index/status", response_model=IndexStatus)
 def index_status():
-    chunk_count = len(resources.get_document_registry().load_documents())
-    page_count = len(resources.get_page_registry().get_all_pages())
+    try:
+        chunk_count = len(resources.get_document_registry().load_documents())
+        page_count = len(resources.get_page_registry().get_all_pages())
 
-    graph = resources.get_graph_registry().load_graph()
-    node_count = graph.node_count() if graph else 0
-    edge_count = graph.edge_count() if graph else 0
+        graph = resources.get_graph_registry().load_graph()
+        node_count = graph.node_count() if graph else 0
+        edge_count = graph.edge_count() if graph else 0
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
     return IndexStatus(
         chunk_count=chunk_count,
@@ -116,21 +133,42 @@ def index_directory():
     return IndexResult(chunks_indexed=chunks)
 
 
+UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB read chunks
+
+
 @app.post("/index/upload", response_model=IndexResult)
 def index_upload(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith(".pdf"):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
 
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-        tmp.write(file.file.read())
-        tmp_path = tmp.name
+    max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    bytes_written = 0
+    tmp_path: str | None = None
 
     try:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            tmp_path = tmp.name
+
+            # Stream in bounded chunks rather than file.file.read() (which
+            # buffers the whole upload in memory) so an oversized upload is
+            # rejected before it can exhaust server memory.
+            while chunk := file.file.read(UPLOAD_CHUNK_SIZE):
+                bytes_written += len(chunk)
+                if bytes_written > max_bytes:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File exceeds the {settings.MAX_UPLOAD_SIZE_MB}MB upload limit.",
+                    )
+                tmp.write(chunk)
+
         chunks = resources.get_indexer().index_single_pdf(tmp_path)
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
     finally:
-        Path(tmp_path).unlink(missing_ok=True)
+        if tmp_path:
+            Path(tmp_path).unlink(missing_ok=True)
 
     resources.invalidate()
     return IndexResult(chunks_indexed=chunks)

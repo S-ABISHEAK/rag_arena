@@ -1,8 +1,15 @@
+import threading
 from pathlib import Path
 import json
 
 
 class PageRegistry:
+
+    # Class-level: see the identical note in DocumentRegistry — multiple
+    # instances (resources.py's cached one, plus fresh ones each
+    # PageIndexRAG/PageIndexBuilder constructs) share the same file and
+    # must serialize through the same lock to avoid a lost-update race.
+    _lock = threading.Lock()
 
     def __init__(
         self,
@@ -59,9 +66,7 @@ class PageRegistry:
         chunk_ids: list[str]
     ):
 
-        pages = self._load()
-
-        pages.append(
+        self.add_pages([
             {
                 "source": source,
                 "page_number": page_number,
@@ -69,9 +74,25 @@ class PageRegistry:
                 "summary": summary,
                 "chunk_ids": chunk_ids
             }
-        )
+        ])
 
-        self._save(pages)
+    def add_pages(
+        self,
+        pages: list[dict]
+    ):
+        """
+        Append multiple pages in a single load/save round trip — used by
+        PageIndexBuilder so indexing an N-page document does one file
+        rewrite instead of N.
+        """
+
+        with self._lock:
+
+            existing = self._load()
+
+            existing.extend(pages)
+
+            self._save(existing)
 
     def get_all_pages(self):
 
@@ -98,4 +119,6 @@ class PageRegistry:
 
     def clear(self):
 
-        self._save([])
+        with self._lock:
+
+            self._save([])

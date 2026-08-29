@@ -1,9 +1,13 @@
+import threading
 import json
 
 from pathlib import Path
 
 
 class RewardTracker:
+
+    # Class-level: see the identical note in DocumentRegistry.
+    _lock = threading.Lock()
 
     def __init__(
         self,
@@ -64,22 +68,24 @@ class RewardTracker:
         reward: float
     ):
 
-        history = (
-            self.load_history()
-        )
+        with self._lock:
 
-        history.append(
-            {
-                "question": question,
-                "retriever": retriever,
-                "latency": latency,
-                "reward": reward
-            }
-        )
+            history = (
+                self.load_history()
+            )
 
-        self.save_history(
-            history
-        )
+            history.append(
+                {
+                    "question": question,
+                    "retriever": retriever,
+                    "latency": latency,
+                    "reward": reward
+                }
+            )
+
+            self.save_history(
+                history
+            )
 
     def get_retriever_history(
         self,

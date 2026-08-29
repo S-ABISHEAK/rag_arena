@@ -11,6 +11,9 @@ const LABELS: Record<keyof ModelConfig, string> = {
   chunk_overlap: "CHUNK_OVERLAP",
   top_k: "TOP_K",
   qdrant_collection: "QDRANT_COLLECTION",
+  reasoning_effort: "REASONING_EFFORT",
+  max_output_tokens: "MAX_OUTPUT_TOKENS",
+  max_context_tokens: "MAX_CONTEXT_TOKENS",
 }
 
 export function ModelConfigCard() {

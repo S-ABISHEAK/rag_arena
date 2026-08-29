@@ -26,6 +26,10 @@ from src.prompts.rag_prompt import (
     RAG_PROMPT
 )
 
+from src.utils.token_budget import (
+    truncate_to_token_budget
+)
+
 
 class PageIndexRAG:
 
@@ -154,9 +158,17 @@ Summary:
         chunks: list[Document]
     ) -> str:
 
-        return "\n\n".join(
+        context = "\n\n".join(
             chunk.page_content
             for chunk in chunks
+        )
+
+        # Unlike Traditional/Hybrid, this can pull EVERY chunk from up to
+        # MAX_SELECTED_PAGES whole pages — a handful of dense pages could
+        # otherwise consume most of a minute's token budget in one query.
+        return truncate_to_token_budget(
+            context,
+            settings.MAX_CONTEXT_TOKENS
         )
 
     def generate_answer(

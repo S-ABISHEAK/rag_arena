@@ -53,7 +53,9 @@ class RagasEvaluator:
                 api_key=settings.GROQ_API_KEY,
                 model=settings.DEFAULT_LLM_MODEL,
                 temperature=0.0,
-                n=1
+                n=1,
+                max_tokens=settings.MAX_OUTPUT_TOKENS,
+                reasoning_effort=settings.REASONING_EFFORT
             )
 
             ragas_llm = LangchainLLMWrapper(groq_llm)
