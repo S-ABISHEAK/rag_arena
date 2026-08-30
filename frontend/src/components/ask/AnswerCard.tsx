@@ -47,7 +47,11 @@ export function AnswerCard({ result, showEvaluate = true }: AnswerCardProps) {
         <RagasScoreCard
           question={result.question}
           answer={result.answer}
-          context={result.sources?.map((s) => s.snippet ?? "") ?? []}
+          // The real context the LLM was given, not the truncated
+          // display snippets — evaluating faithfulness against a
+          // 300-character preview instead of the actual context made
+          // faithful answers look unfaithful.
+          context={result.context ? [result.context] : result.sources?.map((s) => s.snippet ?? "") ?? []}
         />
       )}
     </GlassCard>

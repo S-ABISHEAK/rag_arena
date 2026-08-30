@@ -85,5 +85,6 @@ class TraditionalRAG:
             "question": question,
             "answer": answer,
             "sources": retrieved_docs,
+            "context": context,
             "retrieval_type": "traditional"
         }

@@ -212,6 +212,7 @@ class HybridRAG(TraditionalRAG):
             "question": question,
             "answer": answer,
             "sources": retrieved_documents,
+            "context": context,
             "retrieval_type": "hybrid",
             "retrieved_chunks": len(
                 retrieved_documents

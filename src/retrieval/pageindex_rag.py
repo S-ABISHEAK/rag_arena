@@ -231,6 +231,7 @@ Summary:
                 selected_pages
             ),
             "sources": chunks,
+            "context": context,
             "retrieved_chunks": (
                 len(chunks)
             ),

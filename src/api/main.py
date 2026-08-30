@@ -30,9 +30,19 @@ from src.api.schemas import (
     RouteResult,
     StrategyScore,
 )
+from src.agents.reward_function import RewardFunction
 from src.config.settings import settings
 from src.evaluation.benchmark import compare_rags
 from src.vectorstores.qdrant_store import QdrantStore
+
+# QueryResult.retrieval_type -> the retriever name the bandit/reward
+# tracker expects (see ContextualBandit.get_retriever_scores).
+_RETRIEVAL_TYPE_TO_RETRIEVER = {
+    "traditional": "TRADITIONAL",
+    "hybrid": "HYBRID",
+    "pageindex_v2": "PAGEINDEX",
+    "graph": "GRAPH",
+}
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("rag_arena.api")
@@ -58,6 +68,32 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": str(exc)})
 
 
+def _record_reward(question: str, result: QueryResult) -> None:
+    # Cache hits return near-instantly and reflect nothing about the
+    # strategy's real retrieval/generation quality or speed — recording
+    # them would artificially inflate whichever strategy happens to get
+    # cache hits more often. Only real, freshly-run queries feed the bandit.
+    if result.cache_hit:
+        return
+
+    retriever = _RETRIEVAL_TYPE_TO_RETRIEVER.get(result.retrieval_type)
+    if retriever is None or result.latency is None:
+        return
+
+    try:
+        reward = RewardFunction.compute(result.latency)
+        resources.get_reward_tracker().record_result(
+            question=question,
+            retriever=retriever,
+            latency=result.latency,
+            reward=reward,
+        )
+    except Exception:
+        # The reward log is observability, not the response itself — a
+        # failure here must never break the actual query result.
+        logger.exception("Failed to record reward for a %s query", retriever)
+
+
 def _run_query(build_rag, question: str, fallback_type: str) -> QueryResult:
     try:
         rag = build_rag()
@@ -73,7 +109,9 @@ def _run_query(build_rag, question: str, fallback_type: str) -> QueryResult:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
-    return build_query_result(raw, fallback_type, elapsed)
+    result = build_query_result(raw, fallback_type, elapsed)
+    _record_reward(question, result)
+    return result
 
 
 # ---- System ----
