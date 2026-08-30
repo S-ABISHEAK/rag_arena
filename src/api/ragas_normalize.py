@@ -21,7 +21,14 @@ def _extract_score(metric_name: str, raw_result) -> tuple[float | None, bool]:
         return None, False
 
     try:
-        return float(raw_result[metric_name]), False
+        # ragas' EvaluationResult.__getitem__ returns a list of per-row
+        # scores (one per row in the evaluated dataset) — average them.
+        # This also transparently handles a bare float/int if ragas' shape
+        # ever changes back to that.
+        value = raw_result[metric_name]
+        if isinstance(value, (list, tuple)):
+            return sum(value) / len(value), False
+        return float(value), False
     except Exception:
         pass
 

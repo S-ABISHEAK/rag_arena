@@ -13,6 +13,9 @@
 #     @staticmethod
 import os
 import logging
+
+from src.evaluation import _ragas_compat  # noqa: F401 — must run before `ragas` is imported
+
 from datasets import Dataset
 from ragas import evaluate
 
@@ -75,7 +78,13 @@ class RagasEvaluator:
             results = {}
 
             for metric in (faithfulness, answer_relevancy):
-                metric_name = getattr(metric, "__name__", str(metric))
+                # Metric instances don't have __name__ (that's a function
+                # attribute) — the previous fallback to str(metric) produced
+                # the metric's entire repr (every prompt/example baked into
+                # it) as the dict key instead of a clean "faithfulness" /
+                # "answer_relevancy", which silently broke downstream score
+                # extraction.
+                metric_name = getattr(metric, "name", None) or str(metric)
 
                 try:
                     r = evaluate(
