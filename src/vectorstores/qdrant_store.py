@@ -15,14 +15,26 @@ from src.embeddings.embedder import (
     EmbeddingService
 )
 
+def _build_qdrant_client() -> QdrantClient:
+    # A managed instance (Qdrant Cloud) is reached over HTTPS with an API
+    # key, which host/port alone can't express — QDRANT_URL takes priority
+    # when set, otherwise fall back to the local host:port form.
+    if settings.QDRANT_URL:
+        return QdrantClient(
+            url=settings.QDRANT_URL,
+            api_key=settings.QDRANT_API_KEY or None
+        )
+    return QdrantClient(
+        host=settings.QDRANT_HOST,
+        port=settings.QDRANT_PORT
+    )
+
+
 class QdrantStore:
 
     def __init__(self):
 
-        self.client = QdrantClient(
-            host=settings.QDRANT_HOST,
-            port=settings.QDRANT_PORT
-        )
+        self.client = _build_qdrant_client()
 
         self.embedding_service = (
             EmbeddingService()

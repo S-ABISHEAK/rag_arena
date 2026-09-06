@@ -1,11 +1,10 @@
 import datetime
 import time
 
-from qdrant_client import QdrantClient
-
 from src.cache.redis_client import RedisClient
 from src.config.settings import settings
 from src.api.schemas import ConnectionHealth
+from src.vectorstores.qdrant_store import _build_qdrant_client
 
 # Qdrant/Redis checks are cheap local pings, but Groq's is a real API call
 # against the same account the LLM calls use — polling it on every /health
@@ -21,7 +20,7 @@ def _now() -> str:
 
 def check_qdrant() -> ConnectionHealth:
     try:
-        client = QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
+        client = _build_qdrant_client()
         client.get_collections()
         return ConnectionHealth(service="Qdrant", connected=True, last_checked=_now())
     except Exception as exc:

@@ -91,6 +91,12 @@ class Settings:
         )
     )
 
+    # Set for a managed instance (e.g. Qdrant Cloud), e.g.
+    # "https://xxxx.aws.cloud.qdrant.io:6333" — takes priority over
+    # QDRANT_HOST/PORT when present. Cloud instances also require an API key.
+    QDRANT_URL = os.getenv("QDRANT_URL", "")
+    QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
+
     QDRANT_COLLECTION = (
         "documents"
     )
@@ -110,6 +116,13 @@ class Settings:
             6379
         )
     )
+
+    # Set for a managed instance (e.g. Upstash), e.g.
+    # "rediss://default:<password>@xxxx.upstash.io:6379" — takes priority
+    # over REDIS_HOST/PORT when present. Managed Redis providers typically
+    # require both auth and TLS (the "rediss://" scheme), which plain
+    # host/port can't express.
+    REDIS_URL = os.getenv("REDIS_URL", "")
 
 
     # DATA
