@@ -4,7 +4,7 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -47,7 +47,31 @@ _RETRIEVAL_TYPE_TO_RETRIEVER = {
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("rag_arena.api")
 
+if not settings.API_KEY:
+    # Not fatal — local dev needs no setup — but a deployment running with
+    # no gate on /index/*, /query/*, /evaluate/*, /router/* is publicly
+    # abusable (index wipes, unlimited Groq-billed queries). Loud on
+    # purpose so this is a choice made at deploy time, not an oversight.
+    logger.warning(
+        "API_KEY is not set — /index, /query, /evaluate, and /router routes "
+        "are UNPROTECTED. Set API_KEY before deploying publicly."
+    )
+
 app = FastAPI(title="RAG Arena API")
+
+
+def require_api_key(x_api_key: str | None = Header(default=None, alias="X-API-Key")) -> None:
+    # Open by default (empty API_KEY) so local dev needs no header at all.
+    # Once API_KEY is set, every dependent route requires a matching
+    # X-API-Key header — see the settings.API_KEY docstring for what this
+    # does and doesn't protect against.
+    if not settings.API_KEY:
+        return
+    if x_api_key != settings.API_KEY:
+        raise HTTPException(status_code=401, detail="Missing or invalid API key.")
+
+
+_guarded = [Depends(require_api_key)]
 
 app.add_middleware(
     CORSMiddleware,
@@ -160,7 +184,7 @@ def index_status():
     )
 
 
-@app.post("/index/directory", response_model=IndexResult)
+@app.post("/index/directory", response_model=IndexResult, dependencies=_guarded)
 def index_directory():
     try:
         chunks = resources.get_indexer().index_directory()
@@ -174,7 +198,7 @@ def index_directory():
 UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MB read chunks
 
 
-@app.post("/index/upload", response_model=IndexResult)
+@app.post("/index/upload", response_model=IndexResult, dependencies=_guarded)
 def index_upload(file: UploadFile = File(...)):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
@@ -212,7 +236,7 @@ def index_upload(file: UploadFile = File(...)):
     return IndexResult(chunks_indexed=chunks)
 
 
-@app.post("/index/reset", response_model=ResetResult)
+@app.post("/index/reset", response_model=ResetResult, dependencies=_guarded)
 def index_reset():
     try:
         resources.get_indexer().clear_registry()
@@ -227,27 +251,27 @@ def index_reset():
 # ---- Querying ----
 
 
-@app.post("/query/traditional", response_model=QueryResult)
+@app.post("/query/traditional", response_model=QueryResult, dependencies=_guarded)
 def query_traditional(req: QuestionRequest):
     return _run_query(resources.get_traditional_rag, req.question, "traditional")
 
 
-@app.post("/query/hybrid", response_model=QueryResult)
+@app.post("/query/hybrid", response_model=QueryResult, dependencies=_guarded)
 def query_hybrid(req: QuestionRequest):
     return _run_query(resources.get_hybrid_rag, req.question, "hybrid")
 
 
-@app.post("/query/pageindex", response_model=QueryResult)
+@app.post("/query/pageindex", response_model=QueryResult, dependencies=_guarded)
 def query_pageindex(req: QuestionRequest):
     return _run_query(resources.get_pageindex_rag, req.question, "pageindex_v2")
 
 
-@app.post("/query/graph", response_model=QueryResult)
+@app.post("/query/graph", response_model=QueryResult, dependencies=_guarded)
 def query_graph(req: QuestionRequest):
     return _run_query(resources.get_graph_rag, req.question, "graph")
 
 
-@app.post("/query/agentic", response_model=QueryResult)
+@app.post("/query/agentic", response_model=QueryResult, dependencies=_guarded)
 def query_agentic(req: QuestionRequest):
     return _run_query(resources.get_agentic_rag, req.question, "traditional")
 
@@ -255,7 +279,7 @@ def query_agentic(req: QuestionRequest):
 # ---- Routing / Arena ----
 
 
-@app.post("/router/classify", response_model=RouteResult)
+@app.post("/router/classify", response_model=RouteResult, dependencies=_guarded)
 def router_classify(req: QuestionRequest):
     try:
         route = resources.get_router().route(req.question)
@@ -264,7 +288,7 @@ def router_classify(req: QuestionRequest):
     return RouteResult(route=route)
 
 
-@app.post("/router/embedding-scores", response_model=list[StrategyScore])
+@app.post("/router/embedding-scores", response_model=list[StrategyScore], dependencies=_guarded)
 def router_embedding_scores(req: QuestionRequest):
     try:
         scores = resources.get_embedding_router().route_with_bandit(req.question)
@@ -291,7 +315,7 @@ def bandit_history():
 # ---- Evaluation ----
 
 
-@app.post("/evaluate/benchmark", response_model=list[BenchmarkResult])
+@app.post("/evaluate/benchmark", response_model=list[BenchmarkResult], dependencies=_guarded)
 def evaluate_benchmark(req: QuestionRequest):
     try:
         results = compare_rags(
@@ -307,7 +331,7 @@ def evaluate_benchmark(req: QuestionRequest):
     return [BenchmarkResult(**asdict(r)) for r in results]
 
 
-@app.post("/evaluate/ragas", response_model=RagasScore)
+@app.post("/evaluate/ragas", response_model=RagasScore, dependencies=_guarded)
 def evaluate_ragas(req: RagasRequest):
     try:
         from src.evaluation.ragas_evaluator import RagasEvaluator

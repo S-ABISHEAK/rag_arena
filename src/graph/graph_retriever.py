@@ -36,7 +36,7 @@ class GraphRetriever:
     ):
 
         result = (
-            self.extractor.extract(
+            self.extractor.extract_query(
                 question
             )
         )

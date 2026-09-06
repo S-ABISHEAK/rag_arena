@@ -1,5 +1,7 @@
 import redis
 
+from src.config.settings import settings
+
 
 class RedisClient:
 
@@ -10,9 +12,13 @@ class RedisClient:
 
         if cls._client is None:
 
+            # Was hardcoded to "localhost" — worked only because local dev
+            # runs Redis on the same host. Any real deployment (Docker
+            # network, managed Redis, separate host) needs this configurable,
+            # same as QdrantStore already is.
             cls._client = redis.Redis(
-                host="localhost",
-                port=6379,
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
                 db=0,
                 decode_responses=True
             )

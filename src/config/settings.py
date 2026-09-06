@@ -95,7 +95,23 @@ class Settings:
         "documents"
     )
 
-     
+
+    # REDIS
+
+
+    REDIS_HOST = os.getenv(
+        "REDIS_HOST",
+        "localhost"
+    )
+
+    REDIS_PORT = int(
+        os.getenv(
+            "REDIS_PORT",
+            6379
+        )
+    )
+
+
     # DATA
      
 
@@ -132,6 +148,17 @@ class Settings:
             25
         )
     )
+
+    # Shared secret required (as an "X-API-Key" header) on every mutating or
+    # LLM-calling route once deployed — without it, a public deployment lets
+    # anyone wipe the index or burn through the Groq quota for free. Empty
+    # by default so local dev needs no setup; main.py logs a startup warning
+    # when it's unset so that's a deliberate choice, not an oversight left
+    # in at deploy time. Note this is only a bot/abuse deterrent, not a real
+    # secret: the frontend must send the same value, and anything shipped to
+    # a browser (Vite bakes VITE_-prefixed vars into the public JS bundle)
+    # is visible to anyone who inspects the page.
+    API_KEY = os.getenv("API_KEY", "")
 
 
 settings = Settings()

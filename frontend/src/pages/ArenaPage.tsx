@@ -1,6 +1,9 @@
 import { useState } from "react"
-import { AlertTriangle, X } from "lucide-react"
+import { Info, X } from "lucide-react"
+import { ArenaOverviewStats } from "@/components/arena/ArenaOverviewStats"
 import { StrategyScoreBoard } from "@/components/arena/StrategyScoreBoard"
+import { LatencyByStrategyChart } from "@/components/arena/LatencyByStrategyChart"
+import { HeadToHeadMatchups } from "@/components/arena/HeadToHeadMatchups"
 import { EmbeddingRouterInspector } from "@/components/arena/EmbeddingRouterInspector"
 import { RewardHistoryTable } from "@/components/arena/RewardHistoryTable"
 
@@ -10,10 +13,11 @@ export function ArenaPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
       {bannerVisible && (
-        <div className="flex items-start gap-3 rounded-xl border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/10 px-4 py-3">
-          <AlertTriangle className="w-4 h-4 text-[var(--color-warning)] shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <Info className="w-4 h-4 text-[var(--color-text-muted)] shrink-0 mt-0.5" />
           <p className="text-xs text-[var(--color-text-secondary)] flex-1">
-            Scores reflect seed values until the reward-learning loop is fully wired to live queries.
+            A strategy's leaderboard score is a real average of its recorded query latencies — but it only
+            replaces the 0.65 cold-start baseline once that strategy has at least 5 recorded queries.
           </p>
           <button onClick={() => setBannerVisible(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]">
             <X className="w-4 h-4" />
@@ -21,7 +25,14 @@ export function ArenaPage() {
         </div>
       )}
 
+      <ArenaOverviewStats />
       <StrategyScoreBoard />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <LatencyByStrategyChart />
+        <HeadToHeadMatchups />
+      </div>
+
       <EmbeddingRouterInspector />
       <RewardHistoryTable />
     </div>

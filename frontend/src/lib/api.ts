@@ -25,6 +25,17 @@ import type {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000"
 
+// Sent as X-API-Key on every request when set. Note this is a deterrent
+// against casual/automated abuse, not a real secret: Vite bakes VITE_-
+// prefixed vars into the public JS bundle, so anyone can read it out of
+// the built app. It matches the backend's API_KEY (see settings.py) —
+// leave both unset for local dev.
+const API_KEY = import.meta.env.VITE_API_KEY
+
+function authHeaders(): Record<string, string> {
+  return API_KEY ? { "X-API-Key": API_KEY } : {}
+}
+
 // The only strategies that can actually be dispatched to. The embedding
 // router's profile set (backend router_profiles.py) includes extra
 // categories such as "AGENTIC" that aren't wired to a runnable strategy —
@@ -36,7 +47,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let res: Response
   try {
     res = await fetch(`${API_BASE}${path}`, {
-      headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
+      headers: { "Content-Type": "application/json", ...authHeaders(), ...(options?.headers ?? {}) },
       ...options,
     })
   } catch {
@@ -73,7 +84,7 @@ export async function indexUpload(file: File): Promise<IndexResult> {
 
   let res: Response
   try {
-    res = await fetch(`${API_BASE}/index/upload`, { method: "POST", body: form })
+    res = await fetch(`${API_BASE}/index/upload`, { method: "POST", headers: authHeaders(), body: form })
   } catch {
     throw new Error(`Could not reach the backend at ${API_BASE}. Is it running?`)
   }

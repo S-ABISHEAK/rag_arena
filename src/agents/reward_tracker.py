@@ -1,6 +1,7 @@
 import threading
 import json
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -79,7 +80,11 @@ class RewardTracker:
                     "question": question,
                     "retriever": retriever,
                     "latency": latency,
-                    "reward": reward
+                    "reward": reward,
+                    # Real wall-clock time of the recorded query — lets the
+                    # UI show genuine recency/trend metrics instead of
+                    # relying on array order as a proxy for time.
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }
             )
 

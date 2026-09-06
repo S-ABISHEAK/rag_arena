@@ -62,6 +62,37 @@ class EntityExtractor:
         self.cache.set(text, result)
         return result
 
+    def extract_query(
+        self,
+        question: str
+    ) -> dict:
+        """
+        Entity extraction for a live user question — deliberately separate
+        from extract(): MIN_MEANINGFUL_CHARS exists to skip trivial/
+        boilerplate document chunks while building the graph, but most real
+        questions ("What is DNA?" is 12 characters) are shorter than that
+        threshold. Reusing extract() here was silently discarding entities
+        for nearly every question, so graph retrieval came back empty.
+        Also intentionally not cached — a question is one-off, and caching
+        it would let a single bad/truncated response permanently poison
+        every future retry of that exact question.
+        """
+
+        if not question.strip():
+            return _empty_result()
+
+        prompt = (
+            GRAPH_EXTRACTION_PROMPT.format(
+                text=truncate_to_token_budget(
+                    question, settings.MAX_BATCH_ITEM_TOKENS
+                )
+            )
+        )
+
+        response = self.llm.invoke(prompt)
+
+        return self._parse_single(response)
+
     def extract_batch(
         self,
         texts: list[str]

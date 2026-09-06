@@ -39,6 +39,8 @@ export interface RewardHistoryEntry {
   retriever: Strategy
   latency: number
   reward: number
+  // Absent on entries recorded before this field existed.
+  timestamp?: string
 }
 
 export interface IndexStatus {

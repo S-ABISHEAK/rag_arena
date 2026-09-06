@@ -1,36 +1,41 @@
-langchain
-langchain-community
-langchain-groq
-langchain-qdrant
-langchain_huggingface
+# Pinned to the exact versions this project is built and tested against.
+# Unpinned installs drift over time and can silently break — the ragas /
+# langchain_community incompatibility this project already hit (see
+# src/evaluation/_ragas_compat.py) came from exactly that kind of drift.
+# Bump these deliberately, and re-test, rather than letting `pip install`
+# pick up whatever is newest at deploy time.
 
-qdrant-client
+langchain==1.3.16
+langchain-community==0.4.2
+langchain-groq==1.1.3
+langchain-qdrant==1.1.0
+langchain_huggingface==1.2.2
 
-sentence-transformers
+qdrant-client==1.19.0
 
-pypdf
+sentence-transformers==6.0.0
 
-python-dotenv
+pypdf==6.16.2
 
-fastapi
-uvicorn
+python-dotenv==1.2.3
 
-numpy
-pandas
+fastapi==0.141.1
+uvicorn==0.52.4
 
-tqdm
+numpy==2.5.2
+pandas==3.0.5
 
-torch
-transformers
+tqdm==4.70.0
 
-sentence-transformers
+torch==2.13.0
+transformers==5.15.1
 
-qdrant-client
+rank-bm25==0.2.2
 
-rank-bm25
+ragas==0.4.3
 
-ragas
+datasets==5.0.1
 
-datasets
+redis==8.1.0
 
-redis
+groq==0.37.1

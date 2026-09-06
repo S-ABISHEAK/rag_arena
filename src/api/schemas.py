@@ -44,6 +44,9 @@ class RewardHistoryEntry(BaseModel):
     retriever: str
     latency: float
     reward: float
+    # Optional: entries recorded before this field existed have none, and
+    # must still deserialize instead of failing the whole endpoint.
+    timestamp: Optional[str] = None
 
 
 class IndexStatus(BaseModel):
