@@ -1,9 +1,9 @@
-# Deploying RAG Arena on Render
+# Deploying RAG Arena — Render (backend) + Netlify (frontend)
 
 Render doesn't offer managed Qdrant, and its Redis/"Key Value" add-on has
 no free tier — so this uses two external free-tier services (Qdrant Cloud,
-Upstash Redis) alongside Render for the backend + frontend. Total: 4
-signups, ~30–45 minutes.
+Upstash Redis) for the backend's dependencies, Render for the backend
+itself, and Netlify for the frontend. Total: 4 signups, ~30–45 minutes.
 
 ## 0. Before you start
 
@@ -65,33 +65,38 @@ signups, ~30–45 minutes.
 9. Sanity check: `curl https://<your-service>.onrender.com/health` — Qdrant
    and Redis should both show `connected: true`. Groq will too, if the key's valid.
 
-## 4. Frontend — Render Static Site
+## 4. Frontend — Netlify
 
-1. Render dashboard → **New +** → **Static Site** → same GitHub repo.
-2. **Root Directory**: `frontend`
-3. **Build Command**: `npm install && npm run build`
-4. **Publish Directory**: `dist`
-5. **Environment variables** (these are build-time — Render rebuilds on
-   change, they don't apply live like the backend's):
+A `frontend/netlify.toml` is already in the repo — it sets the build
+command, publish directory, and the SPA rewrite rule (see below) so the
+dashboard needs almost no manual config.
+
+1. Netlify dashboard → **Add new site** → **Import an existing project** →
+   connect the same GitHub repo.
+2. **Base directory**: `frontend`
+3. **Build command** / **Publish directory**: Netlify should auto-detect
+   these from `netlify.toml` (`npm run build` / `dist`) — leave as detected.
+4. **Environment variables** (Site configuration → Environment variables —
+   these are build-time; a redeploy is needed after changing them):
 
    | Key | Value |
    |---|---|
    | `VITE_API_URL` | the backend URL from step 3.8 |
    | `VITE_API_KEY` | same value as the backend's `API_KEY` |
 
-6. **Add a rewrite rule** — this app uses React Router with real URL paths
-   (`/arena`, `/dashboard`, etc.), not hash routing. Without a rewrite rule,
-   refreshing or directly opening any route other than `/` 404s. Render
-   Static Sites → Redirects/Rewrites tab → add:
-   - Source: `/*`
-   - Destination: `/index.html`
-   - Action: **Rewrite**
-7. Deploy. Note the frontend's URL.
+5. The SPA rewrite (`/* → /index.html`) is already handled by
+   `netlify.toml` — this app uses React Router with real URL paths
+   (`/arena`, `/dashboard`, etc.), not hash routing, so without it,
+   refreshing or directly opening any route other than `/` would 404.
+   No dashboard action needed here, but it's worth knowing why that file
+   is there.
+6. Deploy. Note the frontend's URL (`https://<your-site>.netlify.app`, or
+   a custom domain if you set one).
 
 ## 5. Close the loop
 
 1. Go back to the **backend** service's env vars → set `CORS_ORIGINS` to
-   the frontend URL from step 4.7 (e.g. `https://your-app.onrender.com`) →
+   the frontend URL from step 4.6 (e.g. `https://your-app.netlify.app`) →
    save (triggers a redeploy).
 2. Open the frontend URL. Dashboard/Arena should show live (empty) data,
    not errors.
@@ -115,6 +120,6 @@ mounted at `data/` — say so and I'll walk through that when you're there.
 
 - [ ] `GET /health` on the backend shows all three services connected
 - [ ] Frontend loads and can reach the backend (no CORS errors in the browser console)
-- [ ] Direct-loading `/arena` or `/dashboard` (not just `/`) works — confirms the rewrite rule
+- [ ] Direct-loading `/arena` or `/dashboard` (not just `/`) works — confirms `netlify.toml`'s rewrite rule took effect
 - [ ] Index has content (Ingest tab or `/index/status`) before showing anyone the Ask/Arena tabs
 - [ ] A request without `X-API-Key` to a gated route (e.g. `/query/traditional`) returns 401 — confirms `API_KEY` is actually active in production, not left blank

@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# This app uses React Router with real URL paths (/arena, /dashboard,
+# etc.), not hash routing — without this, refreshing or directly opening
+# any route other than / 404s on Netlify's static host.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
