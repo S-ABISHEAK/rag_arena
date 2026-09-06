@@ -27,7 +27,14 @@ pandas==3.0.5
 
 tqdm==4.70.0
 
-torch==2.13.0
+# CPU-only build, pinned explicitly. The plain PyPI "torch==2.13.0" wheel
+# bundles the full CUDA/nvidia-* runtime (multiple GB) — nothing here uses
+# a GPU, and on a small deploy instance (e.g. Render's free 512MB tier)
+# that extra weight is enough to blow the memory budget or the platform's
+# port-bind timeout while it's still being imported, before uvicorn ever
+# starts. This line requires --extra-index-url below to resolve.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.13.0+cpu
 transformers==5.15.1
 
 rank-bm25==0.2.2
