@@ -29,13 +29,20 @@ def _build_qdrant_client() -> QdrantClient:
 
 class QdrantStore:
 
-    def __init__(self):
+    def __init__(self, collection_name: str | None = None):
 
         # Deferred: importing this module (e.g. for _build_qdrant_client,
         # used by the /health check) must never pull in
         # torch/transformers/sentence-transformers — only actually
         # constructing a QdrantStore should.
         from src.embeddings.embedder import EmbeddingService
+
+        # Defaults to the current request's session (see
+        # src/config/session.py) so each anonymous session gets its own
+        # Qdrant collection instead of sharing one global index with every
+        # other visitor to the site.
+        from src.config.session import session_collection_name
+        self.collection_name = collection_name or session_collection_name()
 
         self.client = _build_qdrant_client()
 
@@ -49,7 +56,7 @@ class QdrantStore:
             QdrantVectorStore(
                 client=self.client,
                 collection_name=(
-                    settings.QDRANT_COLLECTION
+                    self.collection_name
                 ),
                 embedding=(
                     self.embedding_service.model
@@ -69,13 +76,13 @@ class QdrantStore:
         ]
 
         if (
-            settings.QDRANT_COLLECTION
+            self.collection_name
             not in existing
         ):
 
             self.client.create_collection(
                 collection_name=(
-                    settings.QDRANT_COLLECTION
+                    self.collection_name
                 ),
                 vectors_config=VectorParams(
                     size=(
@@ -84,7 +91,7 @@ class QdrantStore:
                     ),
                     distance=Distance.COSINE
                 )
-            )    
+            )
 
 
     def add_documents(
@@ -136,17 +143,17 @@ class QdrantStore:
     def delete_collection(self):
 
         self.client.delete_collection(
-            collection_name=settings.QDRANT_COLLECTION
+            collection_name=self.collection_name
         )
 
-        self._create_collection()    
+        self._create_collection()
 
 
     def collection_info(self):
 
         return self.client.get_collection(
-            settings.QDRANT_COLLECTION
-        )        
+            self.collection_name
+        )
     
 
     def similarity_search_by_metadata(

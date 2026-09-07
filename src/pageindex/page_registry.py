@@ -2,6 +2,8 @@ import threading
 from pathlib import Path
 import json
 
+from src.config.session import session_data_dir
+
 
 class PageRegistry:
 
@@ -13,11 +15,13 @@ class PageRegistry:
 
     def __init__(
         self,
-        registry_path: str = "data/pageindex/pages.json"
+        registry_path: str | None = None
     ):
 
+        # Defaults to the current request's session directory (see
+        # src/config/session.py) — see DocumentRegistry for why.
         self.registry_path = Path(
-            registry_path
+            registry_path or session_data_dir() / "pageindex" / "pages.json"
         )
 
         self.registry_path.parent.mkdir(

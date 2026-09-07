@@ -1,6 +1,7 @@
 import logging
 import tempfile
 import time
+import uuid
 from dataclasses import asdict
 from pathlib import Path
 
@@ -78,6 +79,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def session_middleware(request: Request, call_next):
+    # No-login multi-tenancy: the frontend generates a random ID per
+    # browser (see frontend/src/lib/api.ts) and sends it as X-Session-Id.
+    # Every registry/cache/Qdrant-collection this request touches (see
+    # src/config/session.py) is namespaced by it, so what one visitor
+    # indexes or asks is invisible to every other visitor. A request with
+    # no header (e.g. a raw curl call) gets a fresh, one-off ID instead of
+    # falling into a shared bucket — isolated-but-throwaway, not shared.
+    from src.config.session import set_session_id
+
+    session_id = request.headers.get("x-session-id") or f"anon-{uuid.uuid4().hex}"
+    set_session_id(session_id)
+    return await call_next(request)
 
 
 @app.exception_handler(Exception)

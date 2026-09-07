@@ -4,6 +4,8 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from src.config.session import session_data_dir
+
 
 class RewardTracker:
 
@@ -12,13 +14,14 @@ class RewardTracker:
 
     def __init__(
         self,
-        file_path: str = (
-            "data/router/rewards.json"
-        )
+        file_path: str | None = None
     ):
 
+        # Defaults to the current request's session directory (see
+        # src/config/session.py) so each session gets its own Arena
+        # leaderboard/reward history instead of sharing one global log.
         self.file_path = Path(
-            file_path
+            file_path or session_data_dir() / "router" / "rewards.json"
         )
 
         self.file_path.parent.mkdir(

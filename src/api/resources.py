@@ -17,23 +17,37 @@
 
 import threading
 
+from src.config.session import get_session_id
+
 _cache: dict = {}
 _cache_lock = threading.Lock()
 
 
 def _get(key: str, factory):
-    if key not in _cache:
+    # Every cached resource is keyed by (session, key), not just key — a
+    # bare global cache would hand the FIRST session's Router/PageRegistry/
+    # etc. instance to every other session that ever hits this process,
+    # silently defeating the per-session isolation the underlying classes
+    # (see e.g. DocumentRegistry) were just given.
+    full_key = f"{get_session_id()}:{key}"
+
+    if full_key not in _cache:
         with _cache_lock:
             # Re-check inside the lock: another thread may have finished
             # constructing it while we were waiting.
-            if key not in _cache:
-                _cache[key] = factory()
-    return _cache[key]
+            if full_key not in _cache:
+                _cache[full_key] = factory()
+    return _cache[full_key]
 
 
 def invalidate() -> None:
+    # Only this session's cached instances need to go — another session's
+    # index hasn't changed, so forcing it to rebuild everything (including
+    # the embedding-heavy ones) on its next request would be pure waste.
+    prefix = f"{get_session_id()}:"
     with _cache_lock:
-        _cache.clear()
+        for key in [k for k in _cache if k.startswith(prefix)]:
+            del _cache[key]
 
 
 def get_indexer():

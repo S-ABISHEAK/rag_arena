@@ -4,6 +4,8 @@ import pickle
 
 from langchain_core.documents import Document
 
+from src.config.session import session_data_dir
+
 
 class DocumentRegistry:
 
@@ -17,11 +19,15 @@ class DocumentRegistry:
 
     def __init__(
         self,
-        registry_path: str = "data/registry/chunks.pkl"
+        registry_path: str | None = None
     ):
 
+        # Defaults to the current request's session directory (see
+        # src/config/session.py) so each anonymous session gets its own
+        # isolated set of indexed documents instead of sharing one global
+        # registry with every other visitor.
         self.registry_path = Path(
-            registry_path
+            registry_path or session_data_dir() / "registry" / "chunks.pkl"
         )
 
         self.registry_path.parent.mkdir(

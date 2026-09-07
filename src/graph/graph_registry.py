@@ -2,6 +2,8 @@ import threading
 from pathlib import Path
 import pickle
 
+from src.config.session import session_data_dir
+
 
 class GraphRegistry:
 
@@ -13,11 +15,13 @@ class GraphRegistry:
 
     def __init__(
         self,
-        graph_path: str = "data/graph/graph.pkl"
+        graph_path: str | None = None
     ):
 
+        # Defaults to the current request's session directory (see
+        # src/config/session.py) — see DocumentRegistry for why.
         self.graph_path = Path(
-            graph_path
+            graph_path or session_data_dir() / "graph" / "graph.pkl"
         )
 
         self.graph_path.parent.mkdir(

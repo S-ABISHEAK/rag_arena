@@ -5,6 +5,8 @@ from src.cache.redis_client import (
     RedisClient
 )
 
+from src.config.session import get_session_id
+
 
 class QueryCache:
 
@@ -19,9 +21,16 @@ class QueryCache:
         query: str
     ) -> str:
 
-        return hashlib.md5(
+        # Namespaced by session: two sessions have different indexed
+        # documents, so even an identical question text must never return
+        # one session's cached answer to another — that would leak content
+        # and could hand back an answer about a document the asker never
+        # uploaded.
+        digest = hashlib.md5(
             query.encode()
         ).hexdigest()
+
+        return f"{get_session_id()}:{digest}"
 
     def get(
         self,

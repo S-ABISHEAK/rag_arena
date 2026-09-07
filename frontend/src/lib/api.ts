@@ -32,8 +32,45 @@ const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000"
 // leave both unset for local dev.
 const API_KEY = import.meta.env.VITE_API_KEY
 
+// No-login multi-tenancy: a random ID generated once per browser and
+// persisted in localStorage, sent as X-Session-Id on every request. The
+// backend namespaces each session's indexed documents, query history, and
+// Arena leaderboard by this ID (see src/config/session.py) — this is what
+// stops one visitor's uploads/queries from being visible to everyone else
+// on the site. It's per-browser, not per-person: clearing site data or
+// switching devices starts a fresh, empty session.
+const SESSION_ID_KEY = "rag-arena-session-id"
+
+// Memoized so the localStorage-unavailable fallback still returns the same
+// ID for every request during this page load — generating a fresh UUID on
+// every single call would make each request look like a brand-new, empty
+// session, breaking even same-session continuity.
+let cachedSessionId: string | null = null
+
+function getSessionId(): string {
+  if (cachedSessionId) return cachedSessionId
+
+  try {
+    let id = localStorage.getItem(SESSION_ID_KEY)
+    if (!id) {
+      id = crypto.randomUUID()
+      localStorage.setItem(SESSION_ID_KEY, id)
+    }
+    cachedSessionId = id
+  } catch {
+    // Private-browsing/localStorage-disabled fallback: still isolated from
+    // other visitors, just not persisted across a reload.
+    cachedSessionId = crypto.randomUUID()
+  }
+
+  return cachedSessionId
+}
+
 function authHeaders(): Record<string, string> {
-  return API_KEY ? { "X-API-Key": API_KEY } : {}
+  return {
+    "X-Session-Id": getSessionId(),
+    ...(API_KEY ? { "X-API-Key": API_KEY } : {}),
+  }
 }
 
 // The only strategies that can actually be dispatched to. The embedding
