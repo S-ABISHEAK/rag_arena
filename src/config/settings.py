@@ -157,8 +157,14 @@ class Settings:
         "http://127.0.0.1:5183,http://127.0.0.1:5173"
     )
 
+    # Browsers send the Origin header as scheme+host+port only, never with
+    # a trailing slash — "https://myapp.com/" (an easy value to accidentally
+    # paste, e.g. straight from a browser's address bar) will never
+    # exact-match the "https://myapp.com" a real request sends, silently
+    # rejecting every request from that origin. Stripping it here means a
+    # trailing slash typo can't reproduce that outage again.
     CORS_ORIGINS = [
-        origin.strip()
+        origin.strip().rstrip("/")
         for origin in _cors_origins_env.split(",")
         if origin.strip()
     ]
