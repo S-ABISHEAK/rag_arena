@@ -145,13 +145,21 @@ class Settings:
     # Comma-separated list of allowed frontend origins, e.g.
     # "https://myapp.com,https://www.myapp.com" — falls back to the local
     # dev server ports so nothing extra needs configuring for local use.
+    #
+    # `os.getenv("CORS_ORIGINS", default)` alone only falls back when the
+    # var is completely absent — many platforms' env var UIs (Render
+    # included) let you add a key with a blank value, which os.getenv
+    # returns as "" rather than using the default. That silently produced
+    # an empty allow list, rejecting every origin including the deployed
+    # frontend's — `or` catches the blank-string case too.
+    _cors_origins_env = os.getenv("CORS_ORIGINS", "") or (
+        "http://localhost:5183,http://localhost:5173,"
+        "http://127.0.0.1:5183,http://127.0.0.1:5173"
+    )
+
     CORS_ORIGINS = [
         origin.strip()
-        for origin in os.getenv(
-            "CORS_ORIGINS",
-            "http://localhost:5183,http://localhost:5173,"
-            "http://127.0.0.1:5183,http://127.0.0.1:5173"
-        ).split(",")
+        for origin in _cors_origins_env.split(",")
         if origin.strip()
     ]
 
