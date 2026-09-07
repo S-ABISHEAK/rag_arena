@@ -11,9 +11,6 @@ from qdrant_client.models import (
 from langchain_qdrant import QdrantVectorStore
 
 from src.config.settings import settings
-from src.embeddings.embedder import (
-    EmbeddingService
-)
 
 def _build_qdrant_client() -> QdrantClient:
     # A managed instance (Qdrant Cloud) is reached over HTTPS with an API
@@ -33,6 +30,12 @@ def _build_qdrant_client() -> QdrantClient:
 class QdrantStore:
 
     def __init__(self):
+
+        # Deferred: importing this module (e.g. for _build_qdrant_client,
+        # used by the /health check) must never pull in
+        # torch/transformers/sentence-transformers — only actually
+        # constructing a QdrantStore should.
+        from src.embeddings.embedder import EmbeddingService
 
         self.client = _build_qdrant_client()
 

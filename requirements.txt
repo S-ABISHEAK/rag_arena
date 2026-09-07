@@ -21,6 +21,11 @@ python-dotenv==1.2.3
 
 fastapi==0.141.1
 uvicorn==0.52.4
+# Required by FastAPI's File(...)/UploadFile form parsing (used by
+# /index/upload) — FastAPI doesn't declare it as a hard dependency, and
+# without it the upload route fails at request time with "Form data
+# requires python-multipart to be installed."
+python-multipart==0.0.20
 
 numpy==2.5.2
 pandas==3.0.5

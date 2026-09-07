@@ -33,7 +33,6 @@ from src.api.schemas import (
 from src.agents.reward_function import RewardFunction
 from src.config.settings import settings
 from src.evaluation.benchmark import compare_rags
-from src.vectorstores.qdrant_store import QdrantStore
 
 # QueryResult.retrieval_type -> the retriever name the bandit/reward
 # tracker expects (see ContextualBandit.get_retriever_scores).
@@ -238,6 +237,8 @@ def index_upload(file: UploadFile = File(...)):
 
 @app.post("/index/reset", response_model=ResetResult, dependencies=_guarded)
 def index_reset():
+    from src.vectorstores.qdrant_store import QdrantStore
+
     try:
         resources.get_indexer().clear_registry()
         QdrantStore().delete_collection()
